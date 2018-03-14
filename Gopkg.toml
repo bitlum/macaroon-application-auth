@@ -30,20 +30,12 @@
   version = "1.1.0"
 
 [[constraint]]
-  branch = "master"
-  name = "github.com/bitlum/backend"
-
-[[constraint]]
   name = "github.com/go-errors/errors"
   version = "1.0.0"
 
 [[constraint]]
   name = "gopkg.in/macaroon-bakery.v2"
   version = "2.0.1"
-
-[[constraint]]
-  branch = "v1"
-  name = "gopkg.in/macaroon.v1"
 
 [[constraint]]
   name = "gopkg.in/macaroon.v2"

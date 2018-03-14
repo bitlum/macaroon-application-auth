@@ -8,15 +8,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/bitlum/backend"
-  packages = [
-    "wrapper/auth",
-    "wrapper/auth/application"
-  ]
-  revision = "2218d23b4aee0683dbc443f75c5fb597a74a39e8"
-
-[[projects]]
   name = "github.com/go-errors/errors"
   packages = ["."]
   revision = "3afebba5a48dbc89b574d890b6b34d9ee10b4785"
@@ -51,12 +42,6 @@
   version = "v2.0.1"
 
 [[projects]]
-  branch = "v1"
-  name = "gopkg.in/macaroon.v1"
-  packages = ["."]
-  revision = "ab101776739ee61baab9bc50e4b33b5aeb3ac843"
-
-[[projects]]
   name = "gopkg.in/macaroon.v2"
   packages = ["."]
   revision = "bed2a428da6e56d950bed5b41fcbae3141e5b0d0"
@@ -65,6 +50,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9ad4c5321bc6cdf6e1964fda61439b293bbfe5c984f45d44893e8d7e64eb411a"
+  inputs-digest = "80b46741fb08ecc2a3f5b119b986d6d6e6be5ad576cf9cb502cc4eccd11c9b22"
   solver-name = "gps-cdcl"
   solver-version = 1
