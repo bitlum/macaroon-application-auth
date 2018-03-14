@@ -15,39 +15,6 @@ import (
 // implement persistent nonce database.
 var MacaroonLifetime = 5 * time.Second
 
-// NonceDB represent the storage for the nonce.
-type NonceDB interface {
-	GetLastNonceByID(id uint32) (int64, error)
-	PutLastNonceByID(id uint32, nonce int64) error
-
-	// TODO(andrew.shvv) Add StartTransaction,
-	// EndTransaction otherwise there is time between
-}
-
-// InMemoryNonceDB represent the in-memory storage for nonce.
-type InMemoryNonceDB map[uint32]int64
-
-// Runtime check to ensure that InMemoryNonceDB implements NonceDB.
-var _ NonceDB = (*InMemoryNonceDB)(nil)
-
-func (db InMemoryNonceDB) GetLastNonceByID(id uint32) (int64, error) {
-	nonce, ok := db[id]
-	if !ok {
-		// If service has been shutdown and started faster than macaroon
-		// lifetime attacker would have a period of time where he could reuse
-		// the stolen macaroon, because in this case db don't have nonce for id
-		// and returns zero.
-		return 0, nil
-	}
-
-	return nonce, nil
-}
-
-func (db InMemoryNonceDB) PutLastNonceByID(id uint32, nonce int64) error {
-	db[id] = nonce
-	return nil
-}
-
 // AddNonce is used by the client application to add nonce,
 // to the macaroon before making the request. With every request nonce should
 // be increasing. This field is need to protect client from replay-attack.
@@ -78,7 +45,7 @@ func AddCurrentTime(m *macaroon.Macaroon) (*macaroon.Macaroon, error) {
 
 // CheckNonce checks that nonce hasn't been used twice. With this we protect
 // user form replay-attack.
-func CheckNonce(m *macaroon.Macaroon, id uint32, db NonceDB,
+func CheckNonce(m *macaroon.Macaroon, id uint32, db DB,
 	lifetime time.Duration) error {
 	md, err := NewMacaroonDictionary(m)
 	if err != nil {

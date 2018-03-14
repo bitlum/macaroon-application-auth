@@ -41,7 +41,7 @@ func (a *Auth) ExtractToken(tokenStr string) (*Token, error) {
 
 	// Check that token has expired and that nonce is greater than previous
 	// one used by application.
-	if err := CheckNonce(m, userID, a.nonceDB, MacaroonLifetime); err != nil {
+	if err := CheckNonce(m, userID, a.db, MacaroonLifetime); err != nil {
 		return nil, err
 	}
 

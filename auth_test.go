@@ -5,7 +5,7 @@ import (
 )
 
 func TestMacaroon(t *testing.T) {
-	auth := NewAuth("", InMemoryNonceDB{})
+	auth, _ := NewAuth("", NewInMemoryDB([]byte("kek")))
 
 	// Emulate generation token on the server, with the user id taken from other
 	// token, for example jwt.

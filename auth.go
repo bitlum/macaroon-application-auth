@@ -22,20 +22,24 @@ const (
 // issue another applications tokens.
 type Auth struct {
 	rootKey  []byte
-	nonceDB  NonceDB
+	db       DB
 	location string
 
 	// TODO(andrew.shvv) Add token revocation.
 }
 
 // NewAuth creates new instance of application auth.
-func NewAuth(location string, nonceDB NonceDB) *Auth {
-	return &Auth{
-		nonceDB:  nonceDB,
-		location: location,
-		// TODO(andrew.shvv) add root recycling.
-		rootKey: []byte("2871tgylio"),
+func NewAuth(location string, db DB) (*Auth, error) {
+	rootKey, err := db.GetRootKey()
+	if err != nil {
+		return nil, err
 	}
+
+	return &Auth{
+		db:       db,
+		location: location,
+		rootKey:  rootKey,
+	}, nil
 }
 
 // GenerateToken issues the token with the user id and operations
