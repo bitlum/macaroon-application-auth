@@ -8,7 +8,7 @@ var (
 	ErrRepeatedField = errors.Errorf("repeated conditions")
 
 	ErrMacaroonExpired = errors.Errorf("macaroon expired")
-	ErrNonceRepeated   = errors.Errorf("nonce is used already")
+	ErrNonceUsed       = errors.Errorf("nonce is used already")
 
 	ErrOperNotAllowed = errors.Errorf("operation not allowed")
 )

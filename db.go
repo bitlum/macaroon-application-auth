@@ -1,14 +1,16 @@
 package auth
 
+import (
+	"sync"
+	"time"
+	"fmt"
+)
+
 // DB represent the storage for macaroon application authentication which is
 // needed to keep it secure.
 type DB interface {
-	// GetLastNonceByID returns last used nonce by the given user or
-	// application id.
-	GetLastNonceByID(id uint32) (int64, error)
-
-	// PutLastNonceByID assigns new nonce to the given user or applciation id.
-	PutLastNonceByID(id uint32, nonce int64) error
+	// UseNonce mark the nonce as used by the given user.
+	UseNonce(id uint32, nonce int64) bool
 
 	// GetRootKey returns last stored root key.
 	GetRootKey() ([]byte, error)
@@ -24,43 +26,89 @@ type DB interface {
 // NOTE: If macaroon lifetime becomes bigger enough such schema might become
 // insecure.
 type InMemoryDB struct {
-	nonces  map[uint32]int64
-	rootKey []byte
+	nonces        map[string]time.Time
+	rootKey       []byte
+	nonceLifetime time.Duration
+
+	mutex sync.Mutex
+	wg    sync.WaitGroup
+	quit  chan struct{}
 }
 
-func NewInMemoryDB(rootKey []byte) *InMemoryDB {
+func NewInMemoryDB(rootKey []byte, nonceLifetime time.Duration) *InMemoryDB {
 	return &InMemoryDB{
-		nonces:  make(map[uint32]int64),
-		rootKey: rootKey,
+		nonces:        make(map[string]time.Time),
+		rootKey:       rootKey,
+		quit:          make(chan struct{}),
+		nonceLifetime: nonceLifetime,
 	}
+}
+
+func (db *InMemoryDB) StartFlushing() {
+	db.wg.Add(1)
+	go func() {
+		defer db.wg.Done()
+
+		for {
+			select {
+			case <-time.After(db.nonceLifetime):
+			case <-db.quit:
+				return
+			}
+
+			db.mutex.Lock()
+
+			for key, t := range db.nonces {
+				if t.Add(db.nonceLifetime).Before(time.Now()) {
+					delete(db.nonces, key)
+				}
+			}
+
+			db.mutex.Unlock()
+		}
+	}()
+}
+
+func (db *InMemoryDB) StopFlushing() {
+	close(db.quit)
+	db.wg.Wait()
 }
 
 // Runtime check to ensure that InMemoryDB implements DB.
 var _ DB = (*InMemoryDB)(nil)
 
-func (db InMemoryDB) GetLastNonceByID(id uint32) (int64, error) {
-	nonce, ok := db.nonces[id]
-	if !ok {
+func (db *InMemoryDB) UseNonce(id uint32, nonce int64) bool {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
+	key := getKey(id, nonce)
+	if _, ok := db.nonces[key]; !ok {
 		// If service has been shutdown and started faster than macaroon
 		// lifetime attacker would have a period of time where he could reuse
 		// the stolen macaroon, because in this case db don't have nonce for id
 		// and returns zero.
-		return 0, nil
+		return false
 	}
 
-	return nonce, nil
+	db.nonces[key] = time.Now()
+	return true
 }
 
-func (db InMemoryDB) PutLastNonceByID(id uint32, nonce int64) error {
-	db.nonces[id] = nonce
-	return nil
-}
+func (db *InMemoryDB) GetRootKey() ([]byte, error) {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
 
-func (db InMemoryDB) GetRootKey() ([]byte, error) {
 	return db.rootKey, nil
 }
 
-func (db InMemoryDB) PutRootKey(rootKey []byte) error {
+func (db *InMemoryDB) PutRootKey(rootKey []byte) error {
+	db.mutex.Lock()
+	defer db.mutex.Unlock()
+
 	db.rootKey = rootKey
 	return nil
+}
+
+func getKey(id uint32, nonce int64) string {
+	return fmt.Sprintf("%v_%v", id, nonce)
 }

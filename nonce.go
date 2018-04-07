@@ -82,14 +82,9 @@ func CheckNonce(m *macaroon.Macaroon, id uint32, db DB,
 		return err
 	}
 
-	dbNonce, err := db.GetLastNonceByID(id)
-	if err != nil {
-		return err
+	if db.UseNonce(id, macaroonNonce) {
+		return ErrNonceUsed
 	}
 
-	if dbNonce >= macaroonNonce {
-		return ErrNonceRepeated
-	}
-
-	return db.PutLastNonceByID(id, macaroonNonce)
+	return nil
 }
